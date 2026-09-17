@@ -1,0 +1,52 @@
+{
+  "name": "devsignal-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0 <25"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "typecheck": "tsc --noEmit --incremental false",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm test && npm run format:check && npm run verify:content && npm run build",
+    "pipeline": "node --import tsx --env-file-if-exists=.env src/interfaces/cli/main.ts run",
+    "pipeline:dry": "npm run pipeline -- --dry-run",
+    "stage": "node --import tsx --env-file-if-exists=.env src/interfaces/cli/main.ts",
+    "verify:content": "node --import tsx src/interfaces/cli/verify-content.ts",
+    "test:static": "node --import tsx scripts/verify-static.ts"
+  },
+  "dependencies": {
+    "@google/genai": "2.23.0",
+    "gray-matter": "4.0.3",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "rehype-sanitize": "6.0.0",
+    "rehype-stringify": "10.0.1",
+    "remark-parse": "11.0.0",
+    "remark-rehype": "11.1.2",
+    "remark-stringify": "11.0.0",
+    "rss-parser": "3.13.0",
+    "unified": "11.0.5",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.3.5",
+    "prettier": "3.9.8",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "vite": "8.3.0",
+    "vitest": "5.0.1"
+  }
+}

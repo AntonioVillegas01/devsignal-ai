@@ -1,0 +1,92 @@
+name: Deploy Pages
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_call:
+    inputs:
+      commit:
+        required: true
+        type: string
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      current: ${{ steps.current.outputs.current }}
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.commit || github.event.workflow_run.head_sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Skip superseded revisions
+        id: current
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$DEFAULT_BRANCH")" ]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: steps.current.outputs.current == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Set GitHub Pages origin and base path
+        if: steps.current.outputs.current == 'true'
+        env:
+          CUSTOM_ORIGIN: ${{ vars.SITE_URL }}
+          CUSTOM_BASE_PATH: ${{ vars.SITE_BASE_PATH }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const [owner, repository] = process.env.GITHUB_REPOSITORY.split('/');
+          const custom = process.env.CUSTOM_ORIGIN;
+          const origin = custom || `https://${owner.toLowerCase()}.github.io`;
+          const url = new URL(origin);
+          if (url.protocol !== 'https:' || url.origin !== origin) throw new Error('SITE_URL must be an HTTPS origin without a trailing slash');
+          const base = custom ? process.env.CUSTOM_BASE_PATH || '' : repository.toLowerCase() === `${owner.toLowerCase()}.github.io` ? '' : `/${repository}`;
+          if (base && !/^\/[a-zA-Z0-9._-]+$/.test(base)) throw new Error('Invalid base path');
+          appendFileSync(process.env.GITHUB_ENV, `NEXT_PUBLIC_SITE_URL=${origin}\nNEXT_PUBLIC_BASE_PATH=${base}\n`);
+          NODE
+      - if: steps.current.outputs.current == 'true'
+        run: npm ci
+      - if: steps.current.outputs.current == 'true'
+        run: npm run verify:content && npm run check
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        if: steps.current.outputs.current == 'true'
+        with:
+          path: out
+          retention-days: 1
+  deploy:
+    needs: build
+    if: needs.build.outputs.current == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy static publication
+        id: deployment
+        uses: actions/deploy-pages@d6db90192d07ee1e866d60e8c5f5ee1c3ef0b98c # v4.0.5

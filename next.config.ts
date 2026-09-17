@@ -1,0 +1,11 @@
+import type { NextConfig } from 'next';
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
+if (basePath && !/^\/[a-zA-Z0-9._-]+$/.test(basePath))
+  throw new Error('Invalid NEXT_PUBLIC_BASE_PATH');
+const config: NextConfig = {
+  output: 'export',
+  trailingSlash: true,
+  basePath,
+  images: { unoptimized: true },
+};
+export default config;
