@@ -21,7 +21,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       FREE_TIER_ONLY: 'true'
-      GEMINI_MODEL: gemini-2.5-flash
+      GEMINI_MODEL: gemini-3.6-flash
       MAX_LLM_CALLS: '4'
       MAX_ARTICLES_PER_DAY: '1'
     steps:

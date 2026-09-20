@@ -198,7 +198,7 @@ describe('deterministic quality policy', () => {
       expect(() => canonicalUrl(url, trustedDomains)).toThrow();
   });
   it('enforces free-only model selection, bounded calls and minimum thresholds', () => {
-    expect(configSchema.parse({}).GEMINI_MODEL).toBe('gemini-2.5-flash');
+    expect(configSchema.parse({}).GEMINI_MODEL).toBe('gemini-3.6-flash');
     for (const config of [
       { GEMINI_MODEL: 'gemini-2.5-pro' },
       { MAX_LLM_CALLS: '5' },

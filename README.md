@@ -83,11 +83,11 @@ Create an API key in [Google AI Studio](https://aistudio.google.com/apikey) for 
 
 ```dotenv
 GEMINI_API_KEY=your-key-here
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.6-flash
 FREE_TIER_ONLY=true
 ```
 
-Do not use a `NEXT_PUBLIC_` prefix for the key. It is read only by the CLI composition, never by the web data module. The only supported model choices are `gemini-2.5-flash` and `gemini-2.5-flash-lite`. There is no paid fallback, search grounding, or caching tool.
+Do not use a `NEXT_PUBLIC_` prefix for the key. It is read only by the CLI composition, never by the web data module. The default is `gemini-3.6-flash`. The allowlist also retains `gemini-2.5-flash` and `gemini-2.5-flash-lite` for projects that still have access. Google rejects Gemini 2.5 Flash generation for new users even when its model-list endpoint includes it. Gemini 3.6 uses minimal thinking; legacy 2.5 models use a zero thinking budget. There is no paid fallback, search grounding, or caching tool.
 
 Google controls eligibility, model availability, and quotas. Check your AI Studio project before enabling the schedule. `FREE_TIER_ONLY` expresses the intended mode; it cannot inspect your billing configuration. Keep billing disabled to make the monetary bound zero. The application cannot promise a provider will retain its current Free Tier indefinitely.
 
@@ -127,7 +127,7 @@ Configuration is validated by Zod before the pipeline starts. Unknown environmen
 
 | Variable                | Default                 | Bound / purpose                              |
 | ----------------------- | ----------------------- | -------------------------------------------- |
-| `GEMINI_MODEL`          | `gemini-2.5-flash`      | Explicit Flash Free Tier allowlist           |
+| `GEMINI_MODEL`          | `gemini-3.6-flash`      | Explicit Flash Free Tier allowlist           |
 | `MAX_LLM_CALLS`         | `4`                     | 1–4 requests per run, including failures     |
 | `MAX_OUTPUT_TOKENS`     | `6000`                  | 1,000–8,000 per request                      |
 | `MAX_INPUT_CHARS`       | `60000`                 | 5,000–100,000; fails closed if exceeded      |
@@ -217,6 +217,7 @@ To avoid empty commits, skipped/rejected/failed scheduled runs retain metrics as
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `missing_api_key`                | Set `.env` locally or the repository Actions secret. Use `--dry-run --fixture` for an offline run.                                                        |
 | `quota_exhausted` / 429          | Wait for the Free Tier quota reset. Do not attach billing to solve it. No automatic retry occurs.                                                         |
+| `model_unavailable`              | Select an available Flash Free Tier model. Existing `.env` files may still specify the retired-for-new-users 2.5 model.                                   |
 | `llm_unavailable`                | Check the key, eligible model availability, and network in AI Studio. Provider error bodies are deliberately not logged.                                  |
 | `no_suitable_topic`              | Sources may be stale, thin, temporarily unavailable, or already covered. Inspect source failure logs; do not lower quality gates merely to fill the feed. |
 | `invalid_output` / `input_limit` | The model returned malformed output or the bounded context is too large. Inspect source sizes and configuration. Nothing is published.                    |

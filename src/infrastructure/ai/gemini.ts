@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { z } from 'zod';
 import type { LlmPort } from '../../application/ports';
 import type { Config } from '../../config';
@@ -33,7 +33,9 @@ export class SdkGeminiTransport implements GeminiTransport {
         responseJsonSchema: request.schema,
         maxOutputTokens: request.maxOutputTokens,
         temperature: 0.2,
-        thinkingConfig: { thinkingBudget: 0 },
+        thinkingConfig: request.model.startsWith('gemini-2.5-')
+          ? { thinkingBudget: 0 }
+          : { thinkingLevel: ThinkingLevel.MINIMAL },
       },
     });
     return {
@@ -101,6 +103,11 @@ export class GeminiLlm implements LlmPort {
           ? (Reflect.get(error, 'status') ?? Reflect.get(error, 'code'))
           : undefined;
       if (Number(status) === 429) throw new QuotaExhaustedError();
+      if (Number(status) === 404)
+        throw new PipelineError(
+          'model_unavailable',
+          'Configured Gemini model is unavailable for this project. Select a supported Flash Free Tier model.',
+        );
       if (error instanceof z.ZodError || error instanceof SyntaxError)
         throw new PipelineError(
           'invalid_output',

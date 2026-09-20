@@ -52,7 +52,7 @@ describe('Gemini boundary', () => {
     const llm = new GeminiLlm(config(), { generate });
     expect(await llm.generate(request)).toEqual(fixtureDraft);
     expect(generate.mock.calls[0]?.[0].system).toContain('UNTRUSTED DATA');
-    expect(generate.mock.calls[0]?.[0].model).toBe('gemini-2.5-flash');
+    expect(generate.mock.calls[0]?.[0].model).toBe('gemini-3.6-flash');
     expect(JSON.stringify(generate.mock.calls)).not.toContain(
       'test-never-a-real-key',
     );

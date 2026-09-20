@@ -7,8 +7,8 @@ export const configSchema = z
   .object({
     GEMINI_API_KEY: z.string().default(''),
     GEMINI_MODEL: z
-      .enum(['gemini-2.5-flash', 'gemini-2.5-flash-lite'])
-      .default('gemini-2.5-flash'),
+      .enum(['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'])
+      .default('gemini-3.6-flash'),
     FREE_TIER_ONLY: z
       .enum(['true', 'false'])
       .default('true')
