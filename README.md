@@ -2,7 +2,7 @@
 
 **Engineering intelligence, distilled.** An autonomous technical publication that earns the right to publish: collect trusted updates, rank topics, write an evidence-grounded article, challenge it with an independent AI reviewer, apply deterministic gates, and deploy a static website.
 
-Built with Node.js, strict TypeScript, Next.js App Router, Gemini Flash, Zod, Vitest, and GitHub Actions. Markdown is the article store; JSON holds bounded pipeline metrics. No database, runtime server, paid search, or embeddings.
+Built with Node.js, strict TypeScript, Next.js App Router, Gemini Flash or Claude, Zod, Vitest, and GitHub Actions. Markdown is the article store; JSON holds bounded pipeline metrics. No database, runtime server, paid search, or embeddings.
 
 The repository starts with an honest empty publication. Deterministic fixtures demonstrate the complete workflow without inventing published articles, sources, or review results. The website is responsive, keyboard accessible, and includes topic filtering, article pages, review metadata, a pipeline status page, SEO metadata, and a sitemap.
 
@@ -77,6 +77,23 @@ npm run dev
 
 Open `http://localhost:3000`. No API key is needed to browse or build the website. Environment files and caches are ignored by Git. No externally hosted fonts or images are needed.
 
+### Select Gemini or Claude
+
+The CLI reads `.env` locally. `LLM_PROVIDER=gemini` is the default. To use Claude, set:
+
+```dotenv
+LLM_PROVIDER=claude
+ANTHROPIC_API_KEY=your-anthropic-api-key
+CLAUDE_MODEL=claude-sonnet-4-5
+FREE_TIER_ONLY=false
+```
+
+Use a Claude model ID available to your Anthropic API project; the default is configurable, not a guarantee of model availability. Claude uses the Anthropic Messages API and forced structured tool output, validated locally with the same Zod schemas. No tool is executed. There is no automatic provider fallback or retry. Both providers share the call/input/output bounds and publication gates.
+
+Claude is not covered by the Gemini Free Tier policy. `FREE_TIER_ONLY=false` explicitly permits this provider; configure credit/spending limits in your Anthropic account. A Claude app subscription is not an API key. Switching back requires `LLM_PROVIDER=gemini` and `FREE_TIER_ONLY=true`. Never commit either key.
+
+GitHub Actions cannot read your local `.env`. Under **Settings → Secrets and variables → Actions**, add `ANTHROPIC_API_KEY` as a **repository secret** and add `LLM_PROVIDER=claude`, `CLAUDE_MODEL=claude-sonnet-4-5`, and `FREE_TIER_ONLY=false` as **repository variables**. Then run **Daily publishing → Run workflow**. For Gemini, use `LLM_PROVIDER=gemini`, `FREE_TIER_ONLY=true`, and the `GEMINI_API_KEY` secret. Unset variables preserve the existing Gemini setup.
+
 ### Gemini Free Tier
 
 Create an API key in [Google AI Studio](https://aistudio.google.com/apikey) for a project **without a billing account**. Put it in `.env`:
@@ -98,7 +115,7 @@ npm run pipeline
 npm run pipeline:dry
 ```
 
-A live dry run fetches public sources and uses Gemini, consumes quota, executes all gates, and writes no article, checkpoint, lock, or pipeline state. Compiler emission and test-result caches are disabled; integration tests use disposable temporary directories outside the project. For a fully offline demonstration without credentials:
+A live dry run fetches public sources and uses the selected provider, consumes quota, executes all gates, and writes no article, checkpoint, lock, or pipeline state. Compiler emission and test-result caches are disabled; integration tests use disposable temporary directories outside the project. For a fully offline demonstration without credentials:
 
 ```sh
 npm run pipeline -- --dry-run --fixture
@@ -136,7 +153,7 @@ Configuration is validated by Zod before the pipeline starts. Unknown environmen
 | `MIN_REVIEW_SCORE`      | `85`                    | Cannot be set below 85                       |
 | `MIN_CATEGORY_SCORE`    | `80`                    | Cannot be set below 80                       |
 | `DUPLICATE_THRESHOLD`   | `0.65`                  | 0.3–0.8 Jaccard similarity                   |
-| `FREE_TIER_ONLY`        | `true`                  | False is rejected                            |
+| `FREE_TIER_ONLY`        | `true`                  | True for Gemini; false required for Claude   |
 | `NEXT_PUBLIC_SITE_URL`  | `http://localhost:3000` | Site origin, without a trailing slash        |
 | `NEXT_PUBLIC_BASE_PATH` | empty                   | `/repository` for project Pages sites        |
 
@@ -155,8 +172,8 @@ The deployment workflow derives `https://owner.github.io` and the repository bas
 
 ### Workflow behavior
 
-- **CI** runs installation via `npm ci`, strict type-checking, lint, tests, formatting, stored-content verification, and static export for pushes and PRs. It receives no Gemini secret.
-- **Daily publishing** locks scheduled runs, limits execution time, and runs the pipeline. Only the pipeline step receives the Gemini key. After a new validated article is produced, the job re-verifies content, runs all checks and the build, stages only article files and metrics, commits, and pushes to the default branch. A no-topic, rejection, or quota result creates no commit.
+- **CI** runs installation via `npm ci`, strict type-checking, lint, tests, formatting, stored-content verification, and static export for pushes and PRs. It receives no provider secrets.
+- **Daily publishing** locks scheduled runs, limits execution time, and runs the pipeline. Only the pipeline step receives the selected provider key. After a new validated article is produced, the job re-verifies content, runs all checks and the build, stages only article files and metrics, commits, and pushes to the default branch. A no-topic, rejection, or quota result creates no commit.
 - **Deploy Pages** runs after successful default-branch push CI and is also reusable by the daily workflow. Pushes made with `GITHUB_TOKEN` do not recursively trigger ordinary workflows; the daily job therefore calls deployment explicitly with the exact new commit. PRs and fork runs cannot deploy. Superseded revisions are skipped, and Pages deployments are serialized.
 
 Actions are pinned to commit SHAs. Dependabot proposes dependency and action updates. Review changes to the model allowlist manually; a new model name is not evidence that it is free.
@@ -189,7 +206,7 @@ npm run test:static # Isolated populated export, including Pages base paths
 npm run check
 ```
 
-Tests use deterministic fake adapters and never contact Gemini. Coverage includes normalization, topic ranking, similarity, structured outputs, orchestration and revision, threshold enforcement, citation provenance, source transport limits, prompt isolation, Markdown safety, TypeScript validation, quota exhaustion, daily limits, failed checks preventing publication, repository tampering/traversal, read-only queries, dry runs, and a successful end-to-end workflow.
+Tests use deterministic fake adapters and never contact either provider. Coverage includes normalization, topic ranking, similarity, structured outputs, orchestration and revision, threshold enforcement, citation provenance, source transport limits, prompt isolation, Markdown safety, TypeScript validation, quota exhaustion, daily limits, failed checks preventing publication, repository tampering/traversal, read-only queries, dry runs, and a successful end-to-end workflow.
 
 The static export lives in `out/`. Next.js requires at least one parameter for an exported dynamic route; on an empty archive the article route returns a 404 for a reserved bootstrap parameter. This is excluded from the sitemap and is not a published article. Actual article pages are generated from the Markdown archive.
 

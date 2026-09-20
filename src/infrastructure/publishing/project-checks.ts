@@ -10,6 +10,7 @@ export class NpmProjectChecks implements ProjectChecksPort {
       const ok = await new Promise<boolean>((resolve) => {
         const env = { ...process.env };
         delete env.GEMINI_API_KEY;
+        delete env.ANTHROPIC_API_KEY;
         const child = spawn('npm', ['run', script], {
           cwd: this.root,
           env,

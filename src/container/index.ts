@@ -1,6 +1,6 @@
 import { loadConfig, toPolicy } from '../config';
 import { sourceDefinitions, trustedDomains } from '../config/sources';
-import { GeminiLlm } from '../infrastructure/ai/gemini';
+import { createLlm } from '../infrastructure/ai/provider';
 import { SafeFetcher } from '../infrastructure/sources/safe-fetch';
 import { TrustedSourcesProvider } from '../infrastructure/sources/providers';
 import {
@@ -49,7 +49,7 @@ export function createContainer(
     policy = toPolicy(config);
   const clock = overrides.clock ?? new SystemClock(),
     telemetry = overrides.telemetry ?? new ConsoleTelemetry();
-  const llm = overrides.llm ?? new GeminiLlm(config);
+  const llm = overrides.llm ?? createLlm(config);
   const articles = overrides.articles ?? new MarkdownArticleRepository(root),
     state = overrides.state ?? new JsonPipelineStateRepository(root);
   const sources =

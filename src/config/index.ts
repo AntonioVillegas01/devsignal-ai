@@ -5,6 +5,12 @@ const integer = (fallback: number, min: number, max: number) =>
   z.coerce.number().int().min(min).max(max).default(fallback);
 export const configSchema = z
   .object({
+    LLM_PROVIDER: z.enum(['gemini', 'claude']).default('gemini'),
+    ANTHROPIC_API_KEY: z.string().default(''),
+    CLAUDE_MODEL: z
+      .string()
+      .regex(/^claude-[a-zA-Z0-9.-]+$/)
+      .default('claude-sonnet-4-5'),
     GEMINI_API_KEY: z.string().default(''),
     GEMINI_MODEL: z
       .enum(['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'])
@@ -22,10 +28,13 @@ export const configSchema = z
     MIN_CATEGORY_SCORE: integer(80, 80, 100),
     DUPLICATE_THRESHOLD: z.coerce.number().min(0.3).max(0.8).default(0.65),
   })
-  .refine((c) => c.FREE_TIER_ONLY, {
-    message: 'Free Tier mode is required',
-    path: ['FREE_TIER_ONLY'],
-  });
+  .refine(
+    (c) => (c.LLM_PROVIDER === 'claude' ? !c.FREE_TIER_ONLY : c.FREE_TIER_ONLY),
+    {
+      message: 'Claude requires FREE_TIER_ONLY=false; Gemini requires true',
+      path: ['FREE_TIER_ONLY'],
+    },
+  );
 export type Config = z.infer<typeof configSchema>;
 export function loadConfig(
   env: Record<string, string | undefined> = process.env,

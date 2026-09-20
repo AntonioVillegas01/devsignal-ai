@@ -20,8 +20,10 @@ jobs:
       commit: ${{ steps.commit.outputs.commit }}
     env:
       NEXT_TELEMETRY_DISABLED: '1'
-      FREE_TIER_ONLY: 'true'
-      GEMINI_MODEL: gemini-3.6-flash
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'gemini' }}
+      FREE_TIER_ONLY: ${{ vars.FREE_TIER_ONLY || 'true' }}
+      CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL || 'claude-sonnet-4-5' }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.6-flash' }}
       MAX_LLM_CALLS: '4'
       MAX_ARTICLES_PER_DAY: '1'
     steps:
@@ -36,7 +38,8 @@ jobs:
       - run: npm ci
       - name: Run bounded publication pipeline
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ vars.LLM_PROVIDER != 'claude' && secrets.GEMINI_API_KEY || '' }}
+          ANTHROPIC_API_KEY: ${{ vars.LLM_PROVIDER == 'claude' && secrets.ANTHROPIC_API_KEY || '' }}
         run: npm run pipeline
       - name: Verify content and build before committing
         run: |
